@@ -1,0 +1,29 @@
+﻿  main.cpp
+D:\BulletHell\template-project-2\main.cpp(197,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(707,143): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(708,143): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(765,96): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(766,96): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(814,31): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(838,31): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(862,31): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+D:\BulletHell\template-project-2\main.cpp(982,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(985,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(988,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(991,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(994,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1002,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1005,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1008,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1033,5): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1049,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1053,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1061,3): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(1064,3): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+D:\BulletHell\template-project-2\main.cpp(267,6): warning C4101: 'movingEnemyBulletPosX': unreferenced local variable
+D:\BulletHell\template-project-2\main.cpp(266,6): warning C4101: 'nonstaticEnemyBulletPosX': unreferenced local variable
+D:\BulletHell\template-project-2\main.cpp(267,36): warning C4101: 'movingEnemyBulletPosY': unreferenced local variable
+D:\BulletHell\template-project-2\main.cpp(266,39): warning C4101: 'nonstaticEnemyBulletPosY': unreferenced local variable
+D:\BulletHell\template-project-2\main.cpp(265,6): warning C4101: 'enemyBulletPosX': unreferenced local variable
+D:\BulletHell\template-project-2\main.cpp(265,31): warning C4101: 'enemyBulletPosY': unreferenced local variable
+  szablon2vs19.vcxproj -> D:\BulletHell\template-project-2\Debug\szablon2vs19.exe
