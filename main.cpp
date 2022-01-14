@@ -11,6 +11,7 @@ extern "C" {
 #include"./SDL2-2.0.10/include/SDL.h"
 #include"./SDL2-2.0.10/include/SDL_main.h"
 #include <time.h>
+#include "main.h"
 }
 
 #define SCREEN_WIDTH		640
@@ -69,18 +70,18 @@ void SetStage1(SDL_Rect &circleEnemyC, int &circleEnemyHealth)
 
 void SetStage2(SDL_Rect &nonstaticEnemyC,SDL_Rect nonstaticEnemyBulletC[], SDL_Rect nonstaticEnemyBulletDest[], int &nonstaticEnemyHealth)
 {
-	nonstaticEnemyC = { BACKGROUND_WIDTH / 2 - CIRCLE_ENEMY_W / 2, 100, CIRCLE_ENEMY_W, CIRCLE_ENEMY_H };
+	nonstaticEnemyC = { BACKGROUND_WIDTH / 2 - NONSTATIC_ENEMY_W / 2, 100, NONSTATIC_ENEMY_W, NONSTATIC_ENEMY_H };
 	nonstaticEnemyHealth = NONSTATIC_ENEMY_HEALTH;
 	for (int i = 0; i < SHOTS_COUNT; i++)
 	{
-		nonstaticEnemyBulletC[i] = { nonstaticEnemyC.x + CIRCLE_ENEMY_W / 2, nonstaticEnemyC.y + CIRCLE_ENEMY_H / 2,BULLET_WH, BULLET_WH };
+		nonstaticEnemyBulletC[i] = { nonstaticEnemyC.x + NONSTATIC_ENEMY_W / 2, nonstaticEnemyC.y + NONSTATIC_ENEMY_H / 2,BULLET_WH, BULLET_WH };
 		nonstaticEnemyBulletDest[i] = { BACKGROUND_WIDTH/2, BACKGROUND_HEIGHT, 0,0 };
 	}
 }
 
 void SetStage3(SDL_Rect& movingEnemyC, SDL_Rect movingEnemyBulletC[], int& movingEnemyHealth)
 {
-	movingEnemyC = { BACKGROUND_WIDTH / 2 - CIRCLE_ENEMY_W / 2, 100, MOVING_ENEMY_W, MOVING_ENEMY_H };
+	movingEnemyC = { BACKGROUND_WIDTH / 2 - MOVING_ENEMY_W / 2, 100, MOVING_ENEMY_W, MOVING_ENEMY_H };
 	movingEnemyHealth = MOVING_ENEMY_HEALTH;
 	for (int i = 0; i < SHOTS_COUNT; i++)
 	{
@@ -193,6 +194,320 @@ void MyDrawingNotFilled(SDL_Surface* screen, SDL_Rect* platform, SDL_Rect* camer
 #ifdef __cplusplus
 extern "C"
 #endif
+void CheckPlanePosition(SDL_Rect& planeC)
+{
+	if (planeC.x < 0)
+		planeC.x = 0;
+	if (planeC.x > BACKGROUND_WIDTH - PLANE_WH)
+		planeC.x = BACKGROUND_WIDTH - PLANE_WH;
+	if (planeC.y < 0)
+		planeC.y = 0;
+	if (planeC.y > BACKGROUND_HEIGHT - PLANE_WH)
+		planeC.y = BACKGROUND_HEIGHT - PLANE_WH;
+}
+void BulletMovingCircleEnemy(int  circleEnemyBulletRadius[20], SDL_Rect  circleEnemyBulletC[20][20], SDL_Rect& circleEnemyC)
+{
+	for (int i = 0; i < SHOTS_COUNT; i++)
+	{
+		circleEnemyBulletRadius[i] += i / 3;
+		if (circleEnemyBulletRadius[i] > SCREEN_WIDTH)
+			circleEnemyBulletRadius[i] = 0;
+		for (int j = 0; j < CIRCLE_DENSITY; j++)
+		{
+			circleEnemyBulletC[i][j].x = cos(2 * M_PI * j / CIRCLE_DENSITY + i) * circleEnemyBulletRadius[i] + circleEnemyC.x + CIRCLE_ENEMY_W / 2 - BULLET_WH / 2;
+			circleEnemyBulletC[i][j].y = sin(2 * M_PI * j / CIRCLE_DENSITY + i) * circleEnemyBulletRadius[i] + circleEnemyC.y + CIRCLE_ENEMY_H / 2 - BULLET_WH / 2;
+		}
+	}
+}
+void BulletMovingNonstaticEnemy(SDL_Rect  nonstaticEnemyBulletC[20], SDL_Rect  nonstaticEnemyBulletDest[20], SDL_Rect& nonstaticEnemyC, double worldTime, SDL_Rect& planeC)
+{
+	for (int i = 0; i < SHOTS_COUNT; i++)
+	{
+		if (nonstaticEnemyBulletC[i].x < nonstaticEnemyBulletDest[i].x)
+			nonstaticEnemyBulletC[i].x += rand() % 2 * 10;
+		else
+			nonstaticEnemyBulletC[i].x -= rand() % 2 * 10;
+
+		nonstaticEnemyBulletC[i].y += (rand() % 2 + 1) * 5;
+
+		if (nonstaticEnemyBulletC[i].y > SCREEN_HEIGHT + PLANE_WH)
+		{
+			nonstaticEnemyBulletC[i].y = nonstaticEnemyC.y + nonstaticEnemyC.h / 2;
+			nonstaticEnemyBulletC[i].x = nonstaticEnemyC.x + nonstaticEnemyC.w / 2;
+			if (dmod(worldTime, 3) < 0.1)
+			{
+				nonstaticEnemyBulletC[i].w = BULLET_WH * 2;
+				nonstaticEnemyBulletC[i].h = BULLET_WH * 2;
+			}
+			else
+			{
+				nonstaticEnemyBulletC[i].w = BULLET_WH;
+				nonstaticEnemyBulletC[i].h = BULLET_WH;
+			}
+			nonstaticEnemyBulletDest[i] = { planeC.x, planeC.y, 0, 0 };
+		}
+
+	}
+}
+void BulletMovingMovingEnemy(SDL_Rect  movingEnemyBulletC[20], double worldTime, bool& splash, SDL_Rect& splashSpot, SDL_Rect& movingEnemyC, int& movingEnemySplashRadius, SDL_Rect  movingEnemySplashC[20])
+{
+	for (int i = 0; i < SHOTS_COUNT; i++)
+	{
+
+		movingEnemyBulletC[i].y += (i + 1) / 2 + 1;
+
+		if (movingEnemyBulletC[i].y > SCREEN_HEIGHT + PLANE_WH)
+		{
+			if (dmod(worldTime, 3) < 0.1)
+			{
+				splash = true;
+				splashSpot = { movingEnemyBulletC[i].x , movingEnemyBulletC[i].y,0 ,0 };
+			}
+			movingEnemyBulletC[i].y = movingEnemyC.y + movingEnemyC.h / 2;
+			movingEnemyBulletC[i].x = movingEnemyC.x + movingEnemyC.w / 2;
+
+		}
+
+	}
+	if (splash)
+	{
+		for (int j = 0; j < CIRCLE_DENSITY; j++)
+		{
+			movingEnemySplashRadius++;
+			movingEnemySplashC[j].x = cos(2 * M_PI * j / CIRCLE_DENSITY) * movingEnemySplashRadius + splashSpot.x;
+			movingEnemySplashC[j].y = sin(2 * M_PI * j / CIRCLE_DENSITY) * movingEnemySplashRadius + splashSpot.y;
+			if (movingEnemySplashRadius > 200)
+			{
+				movingEnemySplashRadius = 0;
+				for (int k = 0; k<CIRCLE_DENSITY; k++)
+					movingEnemySplashC[k] = { -100, -100, BULLET_WH, BULLET_WH };
+				splash = false;
+				break;
+			}
+		}
+	}
+}
+void DestroyCircleEnemy(int circleEnemyHealth, bool& destroyedSwitch, double& enemyDestroyedTimer, bool& immunity, double& immunityTimer, int& enemyCurrentAnim, SDL_Rect& nonstaticEnemyC, SDL_Rect  nonstaticEnemyBulletC[20], SDL_Rect  nonstaticEnemyBulletDest[20], int& nonstaticEnemyHealth, int& stage)
+{
+	if (circleEnemyHealth < 0)
+	{
+		if (destroyedSwitch)
+		{
+			enemyDestroyedTimer = 0;
+			destroyedSwitch = false;
+		}
+
+		immunity = true;
+		immunityTimer = 0;
+
+		enemyCurrentAnim = 5;
+		if (enemyDestroyedTimer > 1) enemyCurrentAnim = 6;
+		if (enemyDestroyedTimer > 2) enemyCurrentAnim = 7;
+		if (enemyDestroyedTimer > 3)
+		{
+			SetStage2(nonstaticEnemyC, nonstaticEnemyBulletC, nonstaticEnemyBulletDest, nonstaticEnemyHealth);
+			stage = 2;
+			destroyedSwitch = true;
+		}
+
+	}
+}
+void DestroyNonstaticEnemy(int nonstaticEnemyHealth, bool& destroyedSwitch, double& enemyDestroyedTimer, bool& immunity, double& immunityTimer, int& enemyCurrentAnim, SDL_Rect& movingEnemyC, SDL_Rect  movingEnemyBulletC[20], int& movingEnemyHealth, int& stage)
+{
+	if (nonstaticEnemyHealth < 0)
+	{
+		if (destroyedSwitch)
+		{
+			enemyDestroyedTimer = 0;
+			destroyedSwitch = false;
+		}
+
+		immunity = true;
+		immunityTimer = 0;
+		enemyCurrentAnim = 5;
+		if (enemyDestroyedTimer > 1) enemyCurrentAnim = 6;
+		if (enemyDestroyedTimer > 2) enemyCurrentAnim = 7;
+		if (enemyDestroyedTimer > 3)
+		{
+			SetStage3(movingEnemyC, movingEnemyBulletC, movingEnemyHealth);
+			stage = 3;
+			destroyedSwitch = true;
+		}
+	}
+}
+void DestroyMovingEnemy(int movingEnemyHealth, bool& destroyedSwitch, double& enemyDestroyedTimer, bool& immunity, double& immunityTimer, int& enemyCurrentAnim, int& menu)
+{
+	if (movingEnemyHealth < 0)
+	{
+		if (destroyedSwitch)
+		{
+			enemyDestroyedTimer = 0;
+			destroyedSwitch = false;
+		}
+
+		immunity = true;
+		immunityTimer = 0;
+		enemyCurrentAnim = 5;
+		if (enemyDestroyedTimer > 1) enemyCurrentAnim = 6;
+		if (enemyDestroyedTimer > 2) enemyCurrentAnim = 7;
+		if (enemyDestroyedTimer > 3)
+		{
+			menu = 2;
+			destroyedSwitch = true;
+		}
+	}
+}
+void EntityMoving(int slowdown, SDL_Rect& planeC, int velocityX, int velocityY, int& planeCurrentAnim, int stage, SDL_Rect& movingEnemyC, int& movingVelocityX)
+{
+	if (slowdown % 3 == 0)
+	{
+		planeC.x += velocityX;
+		planeC.y += velocityY;
+		planeCurrentAnim = 0;
+		if (velocityX >= 1) planeCurrentAnim = 1;
+		if (velocityX <= -1) planeCurrentAnim = 2;
+		if (velocityY <= -1) planeCurrentAnim = 3;
+		if (velocityY >= 1) planeCurrentAnim = 4;
+
+		switch (stage)
+		{
+		case 3:
+
+			if (movingEnemyC.x > BACKGROUND_WIDTH - MOVING_ENEMY_W || movingEnemyC.x < 0)
+				movingVelocityX *= -1;
+			movingEnemyC.x += movingVelocityX;
+
+
+			break;
+		}
+
+	}
+}
+void CollisionCircleEnemy(SDL_Rect& planeCenter, SDL_Rect& circleEnemyC, bool& immunity, double& immunityTimer, int& planeHealth, int& points, SDL_Rect  circleEnemyBulletC[20][20], SDL_Rect  planeBulletC[20], int& circleEnemyHealth)
+{
+	if (SDL_HasIntersection(&planeCenter, &circleEnemyC))
+	{
+		immunity = true;
+		immunityTimer = 0;
+		planeHealth -= 1;
+		points /= 4;
+	}
+	for (int i = 0; i < SHOTS_COUNT; i++)
+		for (int j = 0; j < CIRCLE_DENSITY; j++)
+			if (SDL_HasIntersection(&planeCenter, &circleEnemyBulletC[i][j]))
+			{
+				immunity = true;
+				immunityTimer = 0;
+				planeHealth -= 1;
+				points /= 4;
+			}
+	for (int i = 0; i < SHOTS_COUNT; i++) //dla circleEnemy
+		if (SDL_HasIntersection(&circleEnemyC, &planeBulletC[i]))
+		{
+			planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
+			circleEnemyHealth -= 1;
+			points = points * 1.05 + 1;
+		}
+}
+void CollisionNonstaticEnemy(SDL_Rect& planeCenter, SDL_Rect& nonstaticEnemyC, bool& immunity, double& immunityTimer, int& planeHealth, int& points, SDL_Rect  nonstaticEnemyBulletC[20], SDL_Rect  planeBulletC[20], int& nonstaticEnemyHealth)
+{
+	if (SDL_HasIntersection(&planeCenter, &nonstaticEnemyC))
+	{
+		immunity = true;
+		immunityTimer = 0;
+		planeHealth -= 1;
+		points /= 4;
+	}
+	for (int i = 0; i < SHOTS_COUNT; i++)
+		if (SDL_HasIntersection(&planeCenter, &nonstaticEnemyBulletC[i]))
+		{
+			immunity = true;
+			immunityTimer = 0;
+			planeHealth -= 1;
+			points /= 4;
+		}
+	for (int i = 0; i < SHOTS_COUNT; i++) //dla nonstaticEnemy
+		if (SDL_HasIntersection(&nonstaticEnemyC, &planeBulletC[i]))
+		{
+			planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
+			nonstaticEnemyHealth -= 1;
+			points = points * 1.05 + 1;
+		}
+}
+void CollisionMovingEnemy(SDL_Rect& planeCenter, SDL_Rect& movingEnemyC, bool& immunity, double& immunityTimer, int& planeHealth, int& points, SDL_Rect  movingEnemyBulletC[20], SDL_Rect  planeBulletC[20], int& movingEnemyHealth)
+{
+	if (SDL_HasIntersection(&planeCenter, &movingEnemyC))
+	{
+		immunity = true;
+		immunityTimer = 0;
+		planeHealth -= 1;
+		points /= 4;
+	}
+	for (int i = 0; i < SHOTS_COUNT; i++)
+		if (SDL_HasIntersection(&planeCenter, &movingEnemyBulletC[i]))
+		{
+			immunity = true;
+			immunityTimer = 0;
+			planeHealth -= 1;
+			points /= 4;
+		}
+	for (int i = 0; i < SHOTS_COUNT; i++) //dla nonstaticEnemy
+		if (SDL_HasIntersection(&movingEnemyC, &planeBulletC[i]))
+		{
+			planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
+			movingEnemyHealth -= 1;
+			points = points * 1.05 + 1;
+		}
+};
+void CreateCircleAbility(bool& circleUltimateAbilityTimerReset, double& circleUltimateAbilityTimer, SDL_Rect& circleUltimateArea, SDL_Surface* screen, SDL_Rect& camera, int czerwony, SDL_Rect& planeCenter, bool& circleUltimateAbility)
+{
+	if (circleUltimateAbilityTimerReset)
+	{
+		circleUltimateAbilityTimer = 0;
+		circleUltimateAbilityTimerReset = false;
+		if (rand() % 2)
+			circleUltimateArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,100,100 };
+		else
+			circleUltimateArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,200,100 };
+	}
+
+	MyDrawingNotFilled(screen, &circleUltimateArea, &camera, czerwony);
+	if (circleUltimateAbilityTimer > 3.0)
+	{
+		MyDrawingFilled(screen, &circleUltimateArea, &camera, czerwony, czerwony);
+		if (SDL_HasIntersection(&planeCenter, &circleUltimateArea)) DrawRectangle(screen, 100, 100, 100, 100, czerwony, czerwony);
+		circleUltimateAbility = false;
+		circleUltimateAbilityTimerReset = true;
+	}
+}
+void CreateBonusHealth(bool& bonusHealthTimerReset, double& bonusHealthTimer, SDL_Rect& bonusHealthArea, SDL_Surface* screen, SDL_Rect& camera, int czerwony, int zielony, SDL_Rect& planeCenter, int& planeHealth, bool& bonusHealth)
+{
+	if (bonusHealthTimerReset)
+	{
+		bonusHealthTimer = 0;
+		bonusHealthTimerReset = false;
+		bonusHealthArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,10,10 };
+	}
+
+	MyDrawingFilled(screen, &bonusHealthArea, &camera, czerwony, zielony);
+	if (SDL_HasIntersection(&planeCenter, &bonusHealthArea))
+	{
+		if (planeHealth < 3)
+			planeHealth += 1;
+		bonusHealth = false;
+		bonusHealthTimerReset = true;
+	}
+}
+void CheckActualLetter(int points, int& gradeCurrentAnim, char& gradeLetter)
+{
+	if (points <= 5000) { gradeCurrentAnim = 0; gradeLetter = 'F'; }
+	if (points > 5000) { gradeCurrentAnim = 1; gradeLetter = 'E'; }
+	if (points > 10000) { gradeCurrentAnim = 2; gradeLetter = 'D'; }
+	if (points > 15000) { gradeCurrentAnim = 3; gradeLetter = 'C'; }
+	if (points > 25000) { gradeCurrentAnim = 4; gradeLetter = 'B'; }
+	if (points > 35000) { gradeCurrentAnim = 5; gradeLetter = 'A'; }
+	if (points > 50000) { gradeCurrentAnim = 6; gradeLetter = 'S'; }
+}
 int main(int argc, char **argv) {
 	srand(time(NULL));
 	int t1, t2, quit, frames, rc;
@@ -217,6 +532,9 @@ int main(int argc, char **argv) {
 	SDL_Rect planeC;
 	SDL_Rect planeCenter;
 
+
+	//allEnemyAnim
+	SDL_Surface* enemyAnim;
 	//circleEnemy
 	SDL_Surface* circleEnemy;																		//grafika
 	SDL_Rect circleEnemyBulletC[SHOTS_COUNT][CIRCLE_DENSITY];										//pociski
@@ -259,8 +577,6 @@ int main(int argc, char **argv) {
 		nonstaticEnemyBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
 	}
 	SDL_Rect movingEnemyC;
-
-
 
 	int enemyBulletPosX[10][10], enemyBulletPosY[10][10]; /// todo do usuniecia
 	int nonstaticEnemyBulletPosX[3][10], nonstaticEnemyBulletPosY[3][10];
@@ -465,6 +781,17 @@ int main(int argc, char **argv) {
 		SDL_Quit();
 		return 1;
 	};
+	enemyAnim = SDL_LoadBMP("./circleEnemy.bmp");
+	if (enemyAnim == NULL) {
+		printf("SDL_LoadBMP(circleEnemy.bmp) error: %s\n", SDL_GetError());
+		SDL_FreeSurface(charset);
+		SDL_FreeSurface(screen);
+		SDL_DestroyTexture(scrtex);
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		SDL_Quit();
+		return 1;
+	};
 	//bullets
 	
 
@@ -512,22 +839,17 @@ int main(int argc, char **argv) {
 	int blowCurrentAnim = 0;
 	double blowTimer = 0;
 
-
+	const int enemyFrames = 7;
+	SDL_Rect enemyClips[enemyFrames];
+	for (int i = 0; i < enemyFrames; i++)
+		enemyClips[i] = { i * CIRCLE_ENEMY_W, 0, CIRCLE_ENEMY_W, CIRCLE_ENEMY_H};
+	int enemyCurrentAnim = 0;
+	double enemyTimer = 0;
 
 	SDL_Rect camera; camera = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
 	
-
-
-
-
-
-
 	planeC = { BACKGROUND_WIDTH / 2, BACKGROUND_HEIGHT / 2+100, BULLET_WH, BULLET_WH };
 	
-
-	
-
-
 	int velocityX = 0, velocityY = 0;
 	int movingVelocityX = 1;
 	int bulletVelocityX = 1, bulletVelocityY = 1;
@@ -546,9 +868,6 @@ int main(int argc, char **argv) {
 	double bonusHealthTimer = 0;
 	SDL_Rect bonusHealthArea{ -100,-100,100,100 };
 
-	
-
-
 	bool immunity = false;
 	double immunityTimer = 0;
 	int points = 100;
@@ -560,16 +879,27 @@ int main(int argc, char **argv) {
 	char gradeLetter = 'F';
 	char gradeChecker = 'F';
 	bool splash = false;
+	double enemyDestroyedTimer = 0;
+	bool destroyedSwitch = true;
 	//##################################################################################################################################################
 	while(!quit) {
 		SDL_FillRect(plane, NULL, bialy);
 		SDL_BlitSurface(planeAnim, &planeClips[planeCurrentAnim], plane, NULL);
 		SDL_FillRect(grade, NULL, bialy);
 		SDL_BlitSurface(gradeAnim, &gradeClips[gradeCurrentAnim], grade, NULL);
+		SDL_FillRect(circleEnemy, NULL, bialy);
+		SDL_BlitSurface(enemyAnim, &enemyClips[enemyCurrentAnim], circleEnemy, NULL);
+		SDL_FillRect(nonstaticEnemy, NULL, bialy);
+		SDL_BlitSurface(enemyAnim, &enemyClips[enemyCurrentAnim], nonstaticEnemy, NULL);
+		SDL_FillRect(movingEnemy, NULL, bialy);
+		SDL_BlitSurface(enemyAnim, &enemyClips[enemyCurrentAnim], movingEnemy, NULL);
 
+		if (enemyTimer > 0.3)
+		{
+			enemyCurrentAnim = (enemyCurrentAnim + 1) % 4;
+			enemyTimer = 0;
+		}
 		
-
-
 
 		if (menu==0)
 		{
@@ -589,6 +919,8 @@ int main(int argc, char **argv) {
 			immunityTimer += delta;
 			blowTimer += delta;
 			distance += etiSpeed * delta;
+			enemyTimer += delta;
+			enemyDestroyedTimer += delta;
 
 
 			//jesli gracz straci zycie idzie do konca gry
@@ -599,25 +931,17 @@ int main(int argc, char **argv) {
 			switch (stage)
 			{
 			case 1:
-				if (circleEnemyHealth < 0)
-				{
-					SetStage2(nonstaticEnemyC, nonstaticEnemyBulletC, nonstaticEnemyBulletDest, nonstaticEnemyHealth);
-					stage = 2;
-				}
+				DestroyCircleEnemy(circleEnemyHealth, destroyedSwitch, enemyDestroyedTimer, immunity, immunityTimer, enemyCurrentAnim, nonstaticEnemyC, nonstaticEnemyBulletC, nonstaticEnemyBulletDest, nonstaticEnemyHealth, stage);
 				break;
 			case 2:
-				if (nonstaticEnemyHealth < 0)
-				{
-					SetStage3(movingEnemyC, movingEnemyBulletC, movingEnemyHealth);
-					stage = 3;
-				}
+				DestroyNonstaticEnemy(nonstaticEnemyHealth, destroyedSwitch, enemyDestroyedTimer, immunity, immunityTimer, enemyCurrentAnim, movingEnemyC, movingEnemyBulletC, movingEnemyHealth, stage);
+				break;
 			case 3:
-				if (movingEnemyHealth < 0)
-				{
-					menu = 2;
-				}
+				DestroyMovingEnemy(movingEnemyHealth, destroyedSwitch, enemyDestroyedTimer, immunity, immunityTimer, enemyCurrentAnim, menu);
 				break;
 			}
+
+
 
 			//health bary
 			planeHealthBar = { planeC.x, planeC.y + PLANE_WH, PLANE_WH - (PLANE_HEALTH - planeHealth) * PLANE_WH / PLANE_HEALTH, 5 };
@@ -637,29 +961,7 @@ int main(int argc, char **argv) {
 			
 
 			//przesuwanie samolotu i moving enemy o podane velocity
-			if (slowdown % 3 == 0)
-			{
-				planeC.x += velocityX;
-				planeC.y += velocityY;
-				planeCurrentAnim = 0;
-				if (velocityX >= 1) planeCurrentAnim = 1;
-				if (velocityX <= -1) planeCurrentAnim = 2;
-				if (velocityY <= -1) planeCurrentAnim = 3;
-				if (velocityY >= 1) planeCurrentAnim = 4;
-
-				switch (stage)
-				{
-				case 3:
-
-					if (movingEnemyC.x > BACKGROUND_WIDTH - MOVING_ENEMY_W || movingEnemyC.x < 0)
-						movingVelocityX *= -1;
-					movingEnemyC.x += movingVelocityX;
-					
-
-					break;
-				}
-
-			}
+			EntityMoving(slowdown, planeC, velocityX, velocityY, planeCurrentAnim, stage, movingEnemyC, movingVelocityX);
 
 			//przesuwanie srodkowego hitboxu
 			planeCenter = { planeC.x + PLANE_WH / 2 - BULLET_WH / 2, planeC.y + PLANE_WH / 2 - BULLET_WH / 2, BULLET_WH, BULLET_WH };
@@ -670,14 +972,7 @@ int main(int argc, char **argv) {
 				immunity = false;
 
 			//warunek aby plane nie wylecia³ poza planszê
-			if (planeC.x < 0)
-				planeC.x = 0;
-			if (planeC.x > BACKGROUND_WIDTH - PLANE_WH)
-				planeC.x = BACKGROUND_WIDTH - PLANE_WH;
-			if (planeC.y < 0)
-				planeC.y = 0;
-			if (planeC.y > BACKGROUND_HEIGHT - PLANE_WH)
-				planeC.y = BACKGROUND_HEIGHT - PLANE_WH;
+			CheckPlanePosition(planeC);
 
 			//Poruszanie sie pociskow
 			if (shoot) //plane
@@ -697,89 +992,19 @@ int main(int argc, char **argv) {
 				switch (stage)
 				{
 				case 1:
-					for (int i = 0; i < SHOTS_COUNT; i++)
-					{
-						circleEnemyBulletRadius[i] += i / 3;
-						if (circleEnemyBulletRadius[i] > SCREEN_WIDTH)
-							circleEnemyBulletRadius[i] = 0;
-						for (int j = 0; j < CIRCLE_DENSITY; j++)
-						{
-							circleEnemyBulletC[i][j].x = cos(2 * M_PI * j / CIRCLE_DENSITY + i) * circleEnemyBulletRadius[i] + circleEnemyC.x + CIRCLE_ENEMY_W / 2 - BULLET_WH / 2;
-							circleEnemyBulletC[i][j].y = sin(2 * M_PI * j / CIRCLE_DENSITY + i) * circleEnemyBulletRadius[i] + circleEnemyC.y + CIRCLE_ENEMY_H / 2 - BULLET_WH / 2;
-						}
-					}
+					BulletMovingCircleEnemy(circleEnemyBulletRadius, circleEnemyBulletC, circleEnemyC);
 					break;
 				case 2:
-					for (int i = 0; i < SHOTS_COUNT; i++)
-					{
-						if (nonstaticEnemyBulletC[i].x < nonstaticEnemyBulletDest[i].x)
-							nonstaticEnemyBulletC[i].x += rand()%2*10;
-						else
-							nonstaticEnemyBulletC[i].x -= rand() % 2 * 10;
-
-						nonstaticEnemyBulletC[i].y += (rand()%2+1)*5;
-
-						if (nonstaticEnemyBulletC[i].y > SCREEN_HEIGHT+PLANE_WH)
-						{
-							nonstaticEnemyBulletC[i].y = nonstaticEnemyC.y + nonstaticEnemyC.h / 2;
-							nonstaticEnemyBulletC[i].x = nonstaticEnemyC.x + nonstaticEnemyC.w / 2;
-							if (dmod(worldTime, 3) < 0.1)
-							{
-								nonstaticEnemyBulletC[i].w = BULLET_WH * 2;
-								nonstaticEnemyBulletC[i].h = BULLET_WH * 2;
-							}
-							else
-							{
-								nonstaticEnemyBulletC[i].w = BULLET_WH;
-								nonstaticEnemyBulletC[i].h = BULLET_WH;
-							}
-							nonstaticEnemyBulletDest[i] = { planeC.x, planeC.y, 0, 0 };
-						}
-
-					}
+					BulletMovingNonstaticEnemy(nonstaticEnemyBulletC, nonstaticEnemyBulletDest, nonstaticEnemyC, worldTime, planeC);
 					break;
 				case 3:
-					for (int i = 0; i < SHOTS_COUNT; i++)
-					{
-
-						movingEnemyBulletC[i].y += (i+1)/2+1;
-
-						if (movingEnemyBulletC[i].y > SCREEN_HEIGHT + PLANE_WH)
-						{
-							if (dmod(worldTime, 3) < 0.1)
-							{
-								splash = true;
-								splashSpot = { movingEnemyBulletC[i].x , movingEnemyBulletC[i].y,0 ,0 };
-							}
-							movingEnemyBulletC[i].y = movingEnemyC.y + movingEnemyC.h / 2;
-							movingEnemyBulletC[i].x = movingEnemyC.x + movingEnemyC.w / 2;
-							
-						}
-
-					}
-					if (splash)
-					{
-						for (int j = 0; j < CIRCLE_DENSITY; j++)
-						{
-							movingEnemySplashRadius++;
-							movingEnemySplashC[j].x = cos(2 * M_PI * j / CIRCLE_DENSITY ) * movingEnemySplashRadius + splashSpot.x;
-							movingEnemySplashC[j].y = sin(2 * M_PI * j / CIRCLE_DENSITY ) * movingEnemySplashRadius + splashSpot.y;
-							if (movingEnemySplashRadius > 200)
-							{
-								movingEnemySplashRadius = 0;
-								for(int k=0; k<CIRCLE_DENSITY; k++)
-									movingEnemySplashC[k] = { -100, -100, BULLET_WH, BULLET_WH };
-								splash = false;
-								break;
-							}
-						}
-					}
+					BulletMovingMovingEnemy(movingEnemyBulletC, worldTime, splash, splashSpot, movingEnemyC, movingEnemySplashRadius, movingEnemySplashC);
 					break;
 				}
 				
 			}
-			if (dmod(worldTime, 5) < 0.1)
-				circleUltimateAbility = true; //umiejetnosc specjalna
+
+
 
 			if (dmod(worldTime, 3) < 0.1)
 				bonusHealth = true; //bonusowe zycie
@@ -790,77 +1015,13 @@ int main(int argc, char **argv) {
 				switch (stage)
 				{
 				case 1:
-					if (SDL_HasIntersection(&planeCenter, &circleEnemyC))
-					{
-						immunity = true;
-						immunityTimer = 0;
-						planeHealth -= 1;
-						points /= 4;
-					}
-					for (int i = 0; i < SHOTS_COUNT; i++)
-						for (int j = 0; j < CIRCLE_DENSITY; j++)
-							if (SDL_HasIntersection(&planeCenter, &circleEnemyBulletC[i][j]))
-							{
-								immunity = true;
-								immunityTimer = 0;
-								planeHealth -= 1;
-								points /= 4;
-							}
-					for (int i = 0; i < SHOTS_COUNT; i++) //dla circleEnemy
-						if (SDL_HasIntersection(&circleEnemyC, &planeBulletC[i]))
-						{
-							planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
-							circleEnemyHealth -= 1;
-							points = points * 1.05 + 1;
-						}
+					CollisionCircleEnemy(planeCenter, circleEnemyC, immunity, immunityTimer, planeHealth, points, circleEnemyBulletC, planeBulletC, circleEnemyHealth);
 					break;
 				case 2:
-					if (SDL_HasIntersection(&planeCenter, &nonstaticEnemyC))
-					{
-						immunity = true;
-						immunityTimer = 0;
-						planeHealth -= 1;
-						points /= 4;
-					}
-					for (int i = 0; i < SHOTS_COUNT; i++)
-						if (SDL_HasIntersection(&planeCenter, &nonstaticEnemyBulletC[i]))
-						{
-							immunity = true;
-							immunityTimer = 0;
-							planeHealth -= 1;
-							points /= 4;
-						}
-					for (int i = 0; i < SHOTS_COUNT; i++) //dla nonstaticEnemy
-						if (SDL_HasIntersection(&nonstaticEnemyC, &planeBulletC[i]))
-						{
-							planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
-							nonstaticEnemyHealth -= 1;
-							points = points * 1.05 + 1;
-						}
+					CollisionNonstaticEnemy(planeCenter, nonstaticEnemyC, immunity, immunityTimer, planeHealth, points, nonstaticEnemyBulletC, planeBulletC, nonstaticEnemyHealth);
 					break;
 				case 3:
-					if (SDL_HasIntersection(&planeCenter, &movingEnemyC))
-					{
-						immunity = true;
-						immunityTimer = 0;
-						planeHealth -= 1;
-						points /= 4;
-					}
-					for (int i = 0; i < SHOTS_COUNT; i++)
-						if (SDL_HasIntersection(&planeCenter, &movingEnemyBulletC[i]))
-						{
-							immunity = true;
-							immunityTimer = 0;
-							planeHealth -= 1;
-							points /= 4;
-						}
-					for (int i = 0; i < SHOTS_COUNT; i++) //dla nonstaticEnemy
-						if (SDL_HasIntersection(&movingEnemyC, &planeBulletC[i]))
-						{
-							planeBulletC[i] = { -100,-100, BULLET_WH, BULLET_WH };
-							movingEnemyHealth -= 1;
-							points = points * 1.05 + 1;
-						}
+					CollisionMovingEnemy(planeCenter, movingEnemyC, immunity, immunityTimer, planeHealth, points, movingEnemyBulletC, planeBulletC, movingEnemyHealth);
 					break;
 				}	
 			}
@@ -876,47 +1037,12 @@ int main(int argc, char **argv) {
 			DrawSurface(screen, background, -camera.x, -camera.y);
 
 			if (circleUltimateAbility)
-			{
-				if (circleUltimateAbilityTimerReset)
-				{
-					circleUltimateAbilityTimer = 0;
-					circleUltimateAbilityTimerReset = false;
-					if (rand() % 2)
-						circleUltimateArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,100,100 };
-					else
-						circleUltimateArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,200,100 };
-				}
-
-				MyDrawingNotFilled(screen, &circleUltimateArea, &camera, czerwony);
-				if (circleUltimateAbilityTimer > 3.0)
-				{
-					MyDrawingFilled(screen, &circleUltimateArea, &camera, czerwony, czerwony);
-					if (SDL_HasIntersection(&planeCenter, &circleUltimateArea)) DrawRectangle(screen, 100, 100, 100, 100, czerwony, czerwony);
-					circleUltimateAbility = false;
-					circleUltimateAbilityTimerReset = true;
-				}
-
-			}
+				CreateCircleAbility(circleUltimateAbilityTimerReset, circleUltimateAbilityTimer, circleUltimateArea, screen, camera, czerwony, planeCenter, circleUltimateAbility);
 
 			if (bonusHealth)
-			{
-				if (bonusHealthTimerReset)
-				{
-					bonusHealthTimer = 0;
-					bonusHealthTimerReset = false;
-						bonusHealthArea = { (rand() % SCREEN_WIDTH) - 100,(rand() % SCREEN_HEIGHT) - 100,10,10 };
-				}
+				CreateBonusHealth(bonusHealthTimerReset, bonusHealthTimer, bonusHealthArea, screen, camera, czerwony, zielony, planeCenter, planeHealth, bonusHealth);
 
-				MyDrawingFilled(screen, &bonusHealthArea, &camera, czerwony, zielony);
-				if (SDL_HasIntersection(&planeCenter, &bonusHealthArea))
-				{
-					if(planeHealth < 3)
-						planeHealth += 1;
-					bonusHealth = false;
-					bonusHealthTimerReset = true;
-				}
 
-			}
 			//samolot
 			DrawSurface(screen, plane, planeC.x - camera.x, planeC.y - camera.y);
 			DrawRectangle(screen, planeCenter.x - camera.x, planeCenter.y - camera.y, BULLET_WH, BULLET_WH, niebieski, zielony);
@@ -1064,13 +1190,7 @@ int main(int argc, char **argv) {
 		sprintf(text, "Esc - wyjscie, strzalki - poruszanie sie, punkty: %i", points);
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 
-		if (points <= 5000) { gradeCurrentAnim = 0; gradeLetter = 'F';}
-		if (points > 5000)  { gradeCurrentAnim = 1; gradeLetter = 'E';}
-		if (points > 10000) { gradeCurrentAnim = 2; gradeLetter = 'D';}
-		if (points > 15000) { gradeCurrentAnim = 3; gradeLetter = 'C';}
-		if (points > 25000) { gradeCurrentAnim = 4; gradeLetter = 'B';}
-		if (points > 35000) { gradeCurrentAnim = 5; gradeLetter = 'A';}
-		if (points > 50000) { gradeCurrentAnim = 6; gradeLetter = 'S';}
+		CheckActualLetter(points, gradeCurrentAnim, gradeLetter);
 
 		if (gradeLetter!=gradeChecker)
 		{
@@ -1165,4 +1285,5 @@ int main(int argc, char **argv) {
 
 	SDL_Quit();
 	return 0;
-	};
+	}
+	
